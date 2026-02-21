@@ -35,6 +35,17 @@ html, body {
 }
 #title-screen .subtitle { font-size: 24px; color: rgba(255,255,255,0.9); }
 #title-screen .robot-big { font-size: 120px; animation: float 3s ease-in-out infinite; }
+.lang-picker {
+  display: flex; gap: 16px; margin-top: 10px;
+}
+.lang-btn {
+  font-size: 48px; background: rgba(255,255,255,0.15); border: 4px solid transparent;
+  border-radius: 16px; padding: 10px 18px; cursor: pointer;
+  transition: transform 0.15s, border-color 0.15s, background 0.15s;
+}
+.lang-btn:active { transform: scale(0.93); }
+.lang-btn.selected { border-color: #fff; background: rgba(255,255,255,0.3); }
+.lang-label { font-size: 14px; color: rgba(255,255,255,0.9); margin-top: 4px; }
 .play-btn {
   margin-top: 20px; padding: 20px 60px; font-size: 32px; font-weight: bold;
   color: #fff; background: #ff6b6b; border: none; border-radius: 50px;
@@ -329,21 +340,25 @@ html, body {
 <div id="title-screen" class="screen active">
   <div class="robot-big">🤖</div>
   <h1>CodePals</h1>
-  <div class="subtitle">Learn to code with Robo!</div>
-  <button class="play-btn" onclick="showScreen('level-screen')">Play!</button>
+  <div class="subtitle" id="title-subtitle">Learn to code with Robo!</div>
+  <div class="lang-picker">
+    <button class="lang-btn selected" onclick="setLanguage('en')" id="lang-en" title="English">🇬🇧<div class="lang-label">English</div></button>
+    <button class="lang-btn" onclick="setLanguage('sv')" id="lang-sv" title="Svenska">🇸🇪<div class="lang-label">Svenska</div></button>
+  </div>
+  <button class="play-btn" id="play-btn" onclick="showScreen('level-screen')">Play!</button>
 </div>
 
 <!-- ===== LEVEL SELECT ===== -->
 <div id="level-screen" class="screen">
-  <h2>Choose a Level</h2>
+  <h2 id="level-screen-title">Choose a Level</h2>
   <div class="level-grid" id="level-grid"></div>
-  <button class="back-btn" onclick="showScreen('title-screen')">Back</button>
+  <button class="back-btn" id="back-btn" onclick="showScreen('title-screen')">Back</button>
 </div>
 
 <!-- ===== GAME SCREEN ===== -->
 <div id="game-screen" class="screen">
   <div class="top-bar">
-    <button onclick="showScreen('level-screen')">Menu</button>
+    <button id="menu-btn" onclick="showScreen('level-screen')">Menu</button>
     <span class="level-info" id="level-label">Level 1</span>
     <span class="hint-text" id="hint-text"></span>
     <button onclick="showIntro()">?</button>
@@ -385,6 +400,110 @@ html, body {
 // =====================================================
 // CODEPALS - A coding game for kids
 // =====================================================
+
+// ---- TRANSLATIONS ----
+const TRANSLATIONS = {
+  en: {
+    subtitle: "Learn to code with Robo!",
+    play: "Play!",
+    chooseLvl: "Choose a Level",
+    back: "Back",
+    menu: "Menu",
+    level: "Level",
+    blocks: "Blocks",
+    move: "Move",
+    turnLeft: "Turn Left",
+    turnRight: "Turn Right",
+    loop: "Loop",
+    endLoop: "End Loop",
+    yourProgram: "Your Program",
+    dragHere: "Drag blocks here!",
+    clear: "Clear",
+    run: "Run ▶",
+    letsGo: "Let's Go!",
+    levelComplete: "Level Complete!",
+    goodTry: "Good try!",
+    niceJob: "Nice job!",
+    perfect: "Amazing! Perfect score!",
+    retry: "Retry",
+    nextLevel: "Next Level",
+    hitEdge: "Oops! Robo went off the edge! 😵",
+    hitWall: "Bonk! Robo hit a wall! 🧱",
+    notReached: "Robo didn't reach the star! Try adding more commands. 🤔",
+    levelNames: [
+      "First Steps", "Keep Going", "Turn Around", "Left and Right",
+      "Watch Out!", "Loop de Loop", "L-Shape", "Zigzag", "The Big Maze"
+    ],
+    intros: [
+      { title: "Meet Robo! 🤖", text: "Robo wants to reach the star! Help Robo by giving commands.", concept: "Drag the 'Move' block into your program, then press Run!" },
+      { title: "More Steps!", text: "Robo needs to walk further this time.", concept: "Use TWO 'Move' blocks to go two steps!" },
+      { title: "Turning! 🔄", text: "Sometimes Robo needs to turn! Robo is facing down.", concept: "NEW: Use 'Turn Right' to change direction!" },
+      { title: "Left Turn!", text: "Now Robo can also turn left!", concept: "NEW: 'Turn Left' turns Robo the other way!" },
+      { title: "Walls! 🧱", text: "Oh no, there are walls! Robo can't walk through them.", concept: "Go AROUND the wall to reach the star!" },
+      { title: "Loops! 🔁", text: "Robo has to walk a LOT of steps. That's tiring to program!", concept: "NEW: Use a LOOP to repeat commands! Put 'Move' inside the loop and set the number." },
+      { title: "L-Shape Path", text: "Robo needs to go down, then turn and go sideways!", concept: "Combine moves and turns. Can you use a loop?" },
+      { title: "Zigzag Maze! 🌀", text: "This maze is tricky! Plan your path carefully.", concept: "Think step by step. Which way should Robo go at each turn?" },
+      { title: "The Big Maze! 🏆", text: "This is the ultimate challenge! Can you guide Robo through?", concept: "Use everything you've learned: moves, turns, and loops!" },
+    ],
+  },
+  sv: {
+    subtitle: "Lär dig programmera med Robo!",
+    play: "Spela!",
+    chooseLvl: "Välj en bana",
+    back: "Tillbaka",
+    menu: "Meny",
+    level: "Bana",
+    blocks: "Block",
+    move: "Gå",
+    turnLeft: "Sväng vänster",
+    turnRight: "Sväng höger",
+    loop: "Slinga",
+    endLoop: "Slut slinga",
+    yourProgram: "Ditt program",
+    dragHere: "Dra block hit!",
+    clear: "Rensa",
+    run: "Kör ▶",
+    letsGo: "Nu kör vi!",
+    levelComplete: "Bana klar!",
+    goodTry: "Bra försök!",
+    niceJob: "Snyggt jobbat!",
+    perfect: "Fantastiskt! Perfekt poäng!",
+    retry: "Försök igen",
+    nextLevel: "Nästa bana",
+    hitEdge: "Hoppsan! Robo ramlade av kanten! 😵",
+    hitWall: "Bonk! Robo körde in i en vägg! 🧱",
+    notReached: "Robo nådde inte stjärnan! Testa att lägga till fler kommandon. 🤔",
+    levelNames: [
+      "Första stegen", "Fortsätt gå", "Vänd dig", "Vänster och höger",
+      "Se upp!", "Slinga-lansen", "L-form", "Sicksack", "Den stora labyrinten"
+    ],
+    intros: [
+      { title: "Möt Robo! 🤖", text: "Robo vill nå stjärnan! Hjälp Robo genom att ge kommandon.", concept: "Dra 'Gå'-blocket till ditt program och tryck Kör!" },
+      { title: "Fler steg!", text: "Robo behöver gå längre den här gången.", concept: "Använd TVÅ 'Gå'-block för att gå två steg!" },
+      { title: "Svängar! 🔄", text: "Ibland måste Robo svänga! Robo tittar nedåt.", concept: "NYTT: Använd 'Sväng höger' för att byta riktning!" },
+      { title: "Vänstersväng!", text: "Nu kan Robo också svänga vänster!", concept: "NYTT: 'Sväng vänster' svänger Robo åt andra hållet!" },
+      { title: "Väggar! 🧱", text: "Ojdå, det finns väggar! Robo kan inte gå genom dem.", concept: "Gå RUNT väggen för att nå stjärnan!" },
+      { title: "Slingor! 🔁", text: "Robo behöver gå MÅNGA steg. Det är jobbigt att programmera!", concept: "NYTT: Använd en SLINGA för att upprepa kommandon! Lägg 'Gå' inuti slingan och ställ in antalet." },
+      { title: "L-formad väg", text: "Robo behöver gå ner, sedan svänga och gå åt sidan!", concept: "Kombinera steg och svängar. Kan du använda en slinga?" },
+      { title: "Sicksack-labyrint! 🌀", text: "Den här labyrinten är knepig! Planera din väg noga.", concept: "Tänk steg för steg. Åt vilket håll ska Robo gå vid varje sväng?" },
+      { title: "Den stora labyrinten! 🏆", text: "Det här är den ultimata utmaningen! Kan du guida Robo igenom?", concept: "Använd allt du har lärt dig: steg, svängar och slingor!" },
+    ],
+  },
+};
+
+let currentLang = 'en';
+function T(key) { return TRANSLATIONS[currentLang][key] || TRANSLATIONS.en[key] || key; }
+
+function setLanguage(lang) {
+  currentLang = lang;
+  try { localStorage.setItem('codepals_lang', lang); } catch(e) {}
+  // Update picker visuals
+  document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('selected'));
+  document.getElementById('lang-' + lang).classList.add('selected');
+  // Update title screen text
+  document.getElementById('title-subtitle').textContent = T('subtitle');
+  document.getElementById('play-btn').textContent = T('play');
+}
 
 // ---- GAME STATE ----
 const state = {
@@ -433,183 +552,15 @@ function sfxPlace() { playTone(500, 0.06, 'sine', 0.08); }
 
 // ---- LEVEL DEFINITIONS ----
 const LEVELS = [
-  // Level 1: Move forward once
-  {
-    name: "First Steps",
-    grid: [
-      ['.','.','.','.'],
-      ['.','.','.','.'],
-      ['.','S','.','.'],
-      ['.','G','.','.'],
-    ],
-    startDir: 2, // facing down
-    commands: ['move'],
-    optimalMoves: 1,
-    intro: {
-      title: "Meet Robo! 🤖",
-      text: "Robo wants to reach the star! Help Robo by giving commands.",
-      concept: "Drag the 'Move' block into your program, then press Run!",
-    }
-  },
-  // Level 2: Move forward twice
-  {
-    name: "Keep Going",
-    grid: [
-      ['.','.','.','.','.'],
-      ['.','S','.','.','.'],
-      ['.','.','.','.','.',],
-      ['.','G','.','.','.',],
-      ['.','.','.','.','.'],
-    ],
-    startDir: 2,
-    commands: ['move'],
-    optimalMoves: 2,
-    intro: {
-      title: "More Steps!",
-      text: "Robo needs to walk further this time.",
-      concept: "Use TWO 'Move' blocks to go two steps!",
-    }
-  },
-  // Level 3: Introduce turning
-  {
-    name: "Turn Around",
-    grid: [
-      ['.','.','.','.','.'],
-      ['.','S','.','.','.',],
-      ['.','.','.','.','.'],
-      ['.','.','.','G','.',],
-      ['.','.','.','.','.'],
-    ],
-    startDir: 2,
-    commands: ['move', 'turn-right'],
-    optimalMoves: 4,
-    intro: {
-      title: "Turning! 🔄",
-      text: "Sometimes Robo needs to turn! Robo is facing down.",
-      concept: "NEW: Use 'Turn Right' to change direction!",
-    }
-  },
-  // Level 4: Turn left + right
-  {
-    name: "Left and Right",
-    grid: [
-      ['.','.','.','.','.'],
-      ['.','.','.','S','.'],
-      ['.','.','.','.','.'],
-      ['.','G','.','.','.',],
-      ['.','.','.','.','.'],
-    ],
-    startDir: 2,
-    commands: ['move', 'turn-left', 'turn-right'],
-    optimalMoves: 4,
-    intro: {
-      title: "Left Turn!",
-      text: "Now Robo can also turn left!",
-      concept: "NEW: 'Turn Left' turns Robo the other way!",
-    }
-  },
-  // Level 5: Navigate around a wall
-  {
-    name: "Watch Out!",
-    grid: [
-      ['.','.','.','.','.'],
-      ['.','S','.','.','.',],
-      ['.','#','.','.','.',],
-      ['.','.','.','.','.'],
-      ['.','G','.','.','.',],
-    ],
-    startDir: 2,
-    commands: ['move', 'turn-left', 'turn-right'],
-    optimalMoves: 6,
-    intro: {
-      title: "Walls! 🧱",
-      text: "Oh no, there are walls! Robo can't walk through them.",
-      concept: "Go AROUND the wall to reach the star!",
-    }
-  },
-  // Level 6: Introduce loops
-  {
-    name: "Loop de Loop",
-    grid: [
-      ['.','S','.','.','.','.'],
-      ['.','.','.','.','.','.'],
-      ['.','.','.','.','.','.'],
-      ['.','.','.','.','.','.'],
-      ['.','G','.','.','.','.'],
-      ['.','.','.','.','.','.'],
-    ],
-    startDir: 2,
-    commands: ['move', 'loop'],
-    optimalMoves: 2, // loop x4 { move }
-    intro: {
-      title: "Loops! 🔁",
-      text: "Robo has to walk a LOT of steps. That's tiring to program!",
-      concept: "NEW: Use a LOOP to repeat commands! Put 'Move' inside the loop and set the number.",
-    }
-  },
-  // Level 7: Loops + turning
-  {
-    name: "L-Shape",
-    grid: [
-      ['.','.','.','.','.','.'],
-      ['.','S','.','.','.','.',],
-      ['.','.','.','.','.','.'],
-      ['.','.','.','.','.','.'],
-      ['.','.','.','G','.','.'],
-      ['.','.','.','.','.','.'],
-    ],
-    startDir: 2,
-    commands: ['move', 'turn-left', 'turn-right', 'loop'],
-    optimalMoves: 5,
-    intro: {
-      title: "L-Shape Path",
-      text: "Robo needs to go down, then turn and go sideways!",
-      concept: "Combine moves and turns. Can you use a loop?",
-    }
-  },
-  // Level 8: Maze with loops
-  {
-    name: "Zigzag",
-    grid: [
-      ['.','.','.','.','.','.','.'],
-      ['.','S','#','.','.','.','.'],
-      ['.','.','#','.','.','.','.'],
-      ['.','.','.','.','.','#','.'],
-      ['.','.','.','.','#','#','.'],
-      ['.','.','.','G','.','.','.'],
-      ['.','.','.','.','.','.','.'],
-    ],
-    startDir: 2,
-    commands: ['move', 'turn-left', 'turn-right', 'loop'],
-    optimalMoves: 8,
-    intro: {
-      title: "Zigzag Maze! 🌀",
-      text: "This maze is tricky! Plan your path carefully.",
-      concept: "Think step by step. Which way should Robo go at each turn?",
-    }
-  },
-  // Level 9: Complex maze
-  {
-    name: "The Big Maze",
-    grid: [
-      ['.','.','.','.','.','.','.','.',],
-      ['.','S','.','.','#','.','.','.',],
-      ['.','#','#','.','.','.','.','.',],
-      ['.','.','.','.','#','#','.','.'],
-      ['.','.','.','.','.','.','.','.',],
-      ['.','#','#','.','.','#','.','.',],
-      ['.','.','.','.','.','.','G','.',],
-      ['.','.','.','.','.','.','.','.',],
-    ],
-    startDir: 1,
-    commands: ['move', 'turn-left', 'turn-right', 'loop'],
-    optimalMoves: 12,
-    intro: {
-      title: "The Big Maze! 🏆",
-      text: "This is the ultimate challenge! Can you guide Robo through?",
-      concept: "Use everything you've learned: moves, turns, and loops!",
-    }
-  },
+  { grid: [['.','.','.','.'],['.','.','.','.'], ['.','S','.','.'], ['.','G','.','.']], startDir: 2, commands: ['move'], optimalMoves: 1 },
+  { grid: [['.','.','.','.','.'], ['.','S','.','.','.'], ['.','.','.','.','.'], ['.','G','.','.','.'], ['.','.','.','.','.']], startDir: 2, commands: ['move'], optimalMoves: 2 },
+  { grid: [['.','.','.','.','.'], ['.','S','.','.','.'], ['.','.','.','.','.'], ['.','.','.','G','.'], ['.','.','.','.','.']], startDir: 2, commands: ['move', 'turn-right'], optimalMoves: 4 },
+  { grid: [['.','.','.','.','.'], ['.','.','.','S','.'], ['.','.','.','.','.'], ['.','G','.','.','.'], ['.','.','.','.','.']], startDir: 2, commands: ['move', 'turn-left', 'turn-right'], optimalMoves: 4 },
+  { grid: [['.','.','.','.','.'], ['.','S','.','.','.'], ['.','#','.','.','.'], ['.','.','.','.','.'], ['.','G','.','.','.']], startDir: 2, commands: ['move', 'turn-left', 'turn-right'], optimalMoves: 6 },
+  { grid: [['.','S','.','.','.','.'], ['.','.','.','.','.','.'], ['.','.','.','.','.','.'], ['.','.','.','.','.','.'], ['.','G','.','.','.','.'], ['.','.','.','.','.','.']], startDir: 2, commands: ['move', 'loop'], optimalMoves: 2 },
+  { grid: [['.','.','.','.','.','.'], ['.','S','.','.','.','.'], ['.','.','.','.','.','.'], ['.','.','.','.','.','.'], ['.','.','.','G','.','.'], ['.','.','.','.','.','.']], startDir: 2, commands: ['move', 'turn-left', 'turn-right', 'loop'], optimalMoves: 5 },
+  { grid: [['.','.','.','.','.','.','.'], ['.','S','#','.','.','.','.'], ['.','.','#','.','.','.','.'], ['.','.','.','.','.','#','.'], ['.','.','.','.','#','#','.'], ['.','.','.','G','.','.','.'], ['.','.','.','.','.','.','.']], startDir: 2, commands: ['move', 'turn-left', 'turn-right', 'loop'], optimalMoves: 8 },
+  { grid: [['.','.','.','.','.','.','.','.'], ['.','S','.','.','#','.','.','.',], ['.','#','#','.','.','.','.','.',], ['.','.','.','.','#','#','.','.'], ['.','.','.','.','.','.','.','.'], ['.','#','#','.','.','#','.','.'], ['.','.','.','.','.','.','G','.'], ['.','.','.','.','.','.','.','.']], startDir: 1, commands: ['move', 'turn-left', 'turn-right', 'loop'], optimalMoves: 12 },
 ];
 
 // ---- INITIALIZATION ----
@@ -623,6 +574,11 @@ function init() {
       state.levelProgress = saved.progress || state.levelProgress;
       state.starsEarned = saved.stars || state.starsEarned;
     }
+  } catch(e) {}
+  // Load saved language
+  try {
+    const savedLang = localStorage.getItem('codepals_lang');
+    if (savedLang && TRANSLATIONS[savedLang]) setLanguage(savedLang);
   } catch(e) {}
   renderLevelGrid();
 }
@@ -640,7 +596,11 @@ function saveProgress() {
 function showScreen(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
-  if (id === 'level-screen') renderLevelGrid();
+  if (id === 'level-screen') {
+    document.getElementById('level-screen-title').textContent = T('chooseLvl');
+    document.getElementById('back-btn').textContent = T('back');
+    renderLevelGrid();
+  }
 }
 
 // ---- LEVEL SELECT ----
@@ -674,12 +634,15 @@ function startLevel(levelIdx) {
 
 // ---- RENDER GAME ----
 function renderGame() {
-  const level = LEVELS[state.currentLevel];
-  document.getElementById('level-label').textContent = `Level ${state.currentLevel + 1}: ${level.name}`;
+  const levelName = T('levelNames')[state.currentLevel];
+  document.getElementById('level-label').textContent = `${T('level')} ${state.currentLevel + 1}: ${levelName}`;
   document.getElementById('hint-text').textContent = '';
+  document.getElementById('menu-btn').textContent = T('menu');
   renderGrid();
   renderCommandPalette();
   renderProgram();
+  document.getElementById('run-btn').textContent = T('run');
+  document.getElementById('reset-btn').textContent = T('clear');
   document.getElementById('run-btn').disabled = false;
   document.getElementById('reset-btn').disabled = false;
 }
@@ -755,24 +718,29 @@ function markCellVisited(r, c) {
 }
 
 // ---- RENDER COMMAND PALETTE ----
+function cmdLabel(type) {
+  if (type === 'move') return '➡️ ' + T('move');
+  if (type === 'turn-left') return '↩️ ' + T('turnLeft');
+  if (type === 'turn-right') return '↪️ ' + T('turnRight');
+  if (type === 'loop-start') return '🔁 ' + T('loop');
+  if (type === 'loop-end') return T('endLoop');
+  return type;
+}
+
 function renderCommandPalette() {
   const level = LEVELS[state.currentLevel];
   const palette = document.getElementById('command-palette');
-  palette.innerHTML = '<div class="section-label">Blocks</div>';
+  palette.innerHTML = `<div class="section-label">${T('blocks')}</div>`;
 
   level.commands.forEach(cmd => {
     if (cmd === 'move') {
-      const block = createBlockElement('move', '➡️ Move');
-      palette.appendChild(block);
+      palette.appendChild(createBlockElement('move', cmdLabel('move')));
     } else if (cmd === 'turn-left') {
-      const block = createBlockElement('turn-left', '↩️ Turn Left');
-      palette.appendChild(block);
+      palette.appendChild(createBlockElement('turn-left', cmdLabel('turn-left')));
     } else if (cmd === 'turn-right') {
-      const block = createBlockElement('turn-right', '↪️ Turn Right');
-      palette.appendChild(block);
+      palette.appendChild(createBlockElement('turn-right', cmdLabel('turn-right')));
     } else if (cmd === 'loop') {
-      const block = createBlockElement('loop-start', '🔁 Loop');
-      palette.appendChild(block);
+      palette.appendChild(createBlockElement('loop-start', cmdLabel('loop-start')));
     }
   });
 }
@@ -809,11 +777,7 @@ function startDrag(e, cmdType) {
   dragGhost.style.opacity = '0.85';
   dragGhost.style.pointerEvents = 'none';
   dragGhost.style.transform = 'scale(1.05)';
-  const label = cmdType === 'move' ? '➡️ Move' :
-                cmdType === 'turn-left' ? '↩️ Turn Left' :
-                cmdType === 'turn-right' ? '↪️ Turn Right' :
-                cmdType === 'loop-start' ? '🔁 Loop' : cmdType;
-  dragGhost.textContent = label;
+  dragGhost.textContent = cmdLabel(cmdType);
   document.body.appendChild(dragGhost);
   positionGhost(touch.clientX, touch.clientY);
 
@@ -919,9 +883,10 @@ function adjustLoopCount(index, delta) {
 function renderProgram() {
   const list = document.getElementById('program-list');
   list.innerHTML = '';
+  document.querySelector('.program-area .section-label').textContent = T('yourProgram');
 
   if (state.program.length === 0) {
-    list.innerHTML = '<div class="placeholder">Drag blocks here!</div>';
+    list.innerHTML = `<div class="placeholder">${T('dragHere')}</div>`;
     return;
   }
 
@@ -933,7 +898,7 @@ function renderProgram() {
     if (cmd.type === 'loop-start') {
       block.className = 'cmd-block loop-start';
       block.innerHTML = `
-        🔁 Loop
+        🔁 ${T('loop')}
         <button class="loop-adj" onclick="event.stopPropagation();adjustLoopCount(${i},-1)">−</button>
         <span class="loop-count">${cmd.count}</span>
         <button class="loop-adj" onclick="event.stopPropagation();adjustLoopCount(${i},+1)">+</button>
@@ -942,21 +907,16 @@ function renderProgram() {
       inLoop = true;
     } else if (cmd.type === 'loop-end') {
       block.className = 'cmd-block loop-end';
-      block.innerHTML = `End Loop <button class="remove-btn" onclick="event.stopPropagation();removeCommand(${i})">✕</button>`;
+      block.innerHTML = `${T('endLoop')} <button class="remove-btn" onclick="event.stopPropagation();removeCommand(${i})">✕</button>`;
       inLoop = false;
     } else {
-      const label = cmd.type === 'move' ? '➡️ Move' :
-                    cmd.type === 'turn-left' ? '↩️ Turn Left' :
-                    cmd.type === 'turn-right' ? '↪️ Turn Right' : cmd.type;
       block.className = `cmd-block ${cmd.type}` + (inLoop ? ' in-loop' : '');
-      block.innerHTML = `${label} <button class="remove-btn" onclick="event.stopPropagation();removeCommand(${i})">✕</button>`;
+      block.innerHTML = `${cmdLabel(cmd.type)} <button class="remove-btn" onclick="event.stopPropagation();removeCommand(${i})">✕</button>`;
     }
 
-    // Tap to add from palette would be a second mode - we just handle removal
     list.appendChild(block);
   });
 
-  // Also add tap-to-add support on the program list
   const progList = document.getElementById('program-list');
   progList.ondragover = (e) => e.preventDefault();
 }
@@ -1036,14 +996,14 @@ async function runProgram() {
       if (nr < 0 || nr >= level.grid.length || nc < 0 || nc >= level.grid[0].length) {
         hitWall = true;
         sfxFail();
-        showHint("Oops! Robo went off the edge! 😵");
+        showHint(T('hitEdge'));
         break;
       }
       // Check wall
       if (level.grid[nr][nc] === '#') {
         hitWall = true;
         sfxFail();
-        showHint("Bonk! Robo hit a wall! 🧱");
+        showHint(T('hitWall'));
         break;
       }
 
@@ -1098,7 +1058,7 @@ async function runProgram() {
     saveProgress();
   } else if (!hitWall) {
     sfxFail();
-    showHint("Robo didn't reach the star! Try adding more commands. 🤔");
+    showHint(T('notReached'));
   }
 
   state.isRunning = false;
@@ -1156,15 +1116,14 @@ function resetLevel() {
 
 // ---- INTRO OVERLAY ----
 function showIntro() {
-  const level = LEVELS[state.currentLevel];
-  const intro = level.intro;
+  const intro = T('intros')[state.currentLevel];
   const card = document.getElementById('intro-card');
   card.innerHTML = `
     <div class="intro-char">🤖</div>
     <h2>${intro.title}</h2>
     <p>${intro.text}</p>
     <div class="new-concept">💡 ${intro.concept}</div>
-    <button onclick="closeIntro()">Let's Go!</button>
+    <button onclick="closeIntro()">${T('letsGo')}</button>
   `;
   document.getElementById('intro-overlay').classList.add('active');
 }
@@ -1177,20 +1136,18 @@ function closeIntro() {
 function showWin(stars) {
   const card = document.getElementById('win-card');
   const starStr = '⭐'.repeat(stars) + '☆'.repeat(3 - stars);
-  const messages = [
-    "Good try!", "Nice job!", "Amazing! Perfect score!"
-  ];
+  const messages = [T('goodTry'), T('niceJob'), T('perfect')];
   const hasNext = state.currentLevel + 1 < LEVELS.length;
 
   card.innerHTML = `
     <div class="trophy">🏆</div>
-    <h2>Level Complete!</h2>
+    <h2>${T('levelComplete')}</h2>
     <div class="stars-display">${starStr}</div>
     <div class="msg">${messages[stars - 1]}</div>
     <div class="win-btns">
-      <button class="retry-btn" onclick="closeWin();resetLevel()">Retry</button>
-      ${hasNext ? `<button class="next-btn" onclick="closeWin();startLevel(${state.currentLevel + 1})">Next Level</button>` : ''}
-      <button class="menu-btn" onclick="closeWin();showScreen('level-screen')">Menu</button>
+      <button class="retry-btn" onclick="closeWin();resetLevel()">${T('retry')}</button>
+      ${hasNext ? `<button class="next-btn" onclick="closeWin();startLevel(${state.currentLevel + 1})">${T('nextLevel')}</button>` : ''}
+      <button class="menu-btn" onclick="closeWin();showScreen('level-screen')">${T('menu')}</button>
     </div>
   `;
   document.getElementById('win-overlay').classList.add('active');

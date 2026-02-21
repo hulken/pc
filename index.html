@@ -196,7 +196,12 @@ html, body {
   color: #b2bec3; font-size: 16px; text-align: center; padding: 20px;
   pointer-events: none;
 }
-.program-list .cmd-block { cursor: pointer; position: relative; }
+.program-list .cmd-block { cursor: grab; position: relative; }
+.program-list .cmd-block.dragging { opacity: 0.3; }
+.program-list .drop-indicator {
+  height: 4px; background: #0984e3; border-radius: 2px;
+  margin: -2px 0; position: relative; z-index: 5;
+}
 .program-list .cmd-block .remove-btn {
   position: absolute; top: -6px; right: -6px; width: 22px; height: 22px;
   background: #e74c3c; color: #fff; border: 2px solid #fff;
@@ -437,7 +442,7 @@ const TRANSLATIONS = {
     intros: [
       { title: "Meet Robo! 🤖", text: "Robo wants to reach the star! Help Robo by giving commands.", concept: "Drag the 'Move' block into your program, then press Run!" },
       { title: "More Steps!", text: "Robo needs to walk further this time.", concept: "Use TWO 'Move' blocks to go two steps!" },
-      { title: "Turning! 🔄", text: "Sometimes Robo needs to turn! Robo is facing down.", concept: "NEW: Use 'Turn Left' to change direction!" },
+      { title: "Turning! 🔄", text: "Sometimes Robo needs to turn! Robo is facing down.", concept: "NEW: Use 'Turn Right' to change direction!" },
       { title: "Left Turn!", text: "Now Robo can also turn left!", concept: "NEW: 'Turn Left' turns Robo the other way!" },
       { title: "Walls! 🧱", text: "Oh no, there are walls! Robo can't walk through them.", concept: "Go AROUND the wall to reach the star!" },
       { title: "Loops! 🔁", text: "Robo has to walk a LOT of steps. That's tiring to program!", concept: "NEW: Use a LOOP to repeat commands! Put 'Move' inside the loop and set the number." },
@@ -480,7 +485,7 @@ const TRANSLATIONS = {
     intros: [
       { title: "Möt Robo! 🤖", text: "Robo vill nå stjärnan! Hjälp Robo genom att ge kommandon.", concept: "Dra 'Gå'-blocket till ditt program och tryck Kör!" },
       { title: "Fler steg!", text: "Robo behöver gå längre den här gången.", concept: "Använd TVÅ 'Gå'-block för att gå två steg!" },
-      { title: "Svängar! 🔄", text: "Ibland måste Robo svänga! Robo tittar nedåt.", concept: "NYTT: Använd 'Sväng vänster' för att byta riktning!" },
+      { title: "Svängar! 🔄", text: "Ibland måste Robo svänga! Robo tittar nedåt.", concept: "NYTT: Använd 'Sväng höger' för att byta riktning!" },
       { title: "Vänstersväng!", text: "Nu kan Robo också svänga vänster!", concept: "NYTT: 'Sväng vänster' svänger Robo åt andra hållet!" },
       { title: "Väggar! 🧱", text: "Ojdå, det finns väggar! Robo kan inte gå genom dem.", concept: "Gå RUNT väggen för att nå stjärnan!" },
       { title: "Slingor! 🔁", text: "Robo behöver gå MÅNGA steg. Det är jobbigt att programmera!", concept: "NYTT: Använd en SLINGA för att upprepa kommandon! Lägg 'Gå' inuti slingan och ställ in antalet." },
@@ -554,7 +559,7 @@ function sfxPlace() { playTone(500, 0.06, 'sine', 0.08); }
 const LEVELS = [
   { grid: [['.','.','.','.'],['.','.','.','.'], ['.','S','.','.'], ['.','G','.','.']], startDir: 2, commands: ['move'], optimalMoves: 1 },
   { grid: [['.','.','.','.','.'], ['.','S','.','.','.'], ['.','.','.','.','.'], ['.','G','.','.','.'], ['.','.','.','.','.']], startDir: 2, commands: ['move'], optimalMoves: 2 },
-  { grid: [['.','.','.','.','.'], ['.','S','.','.','.'], ['.','.','.','.','.'], ['.','.','.','G','.'], ['.','.','.','.','.']], startDir: 2, commands: ['move', 'turn-left'], optimalMoves: 4 },
+  { grid: [['.','.','.','.','.'], ['.','S','.','.','.'], ['.','.','.','.','.'], ['.','.','.','G','.'], ['.','.','.','.','.']], startDir: 2, commands: ['move', 'turn-right'], optimalMoves: 4 },
   { grid: [['.','.','.','.','.'], ['.','.','.','S','.'], ['.','.','.','.','.'], ['.','G','.','.','.'], ['.','.','.','.','.']], startDir: 2, commands: ['move', 'turn-left', 'turn-right'], optimalMoves: 4 },
   { grid: [['.','.','.','.','.'], ['.','S','.','.','.'], ['.','#','.','.','.'], ['.','.','.','.','.'], ['.','G','.','.','.']], startDir: 2, commands: ['move', 'turn-left', 'turn-right'], optimalMoves: 6 },
   { grid: [['.','S','.','.','.','.'], ['.','.','.','.','.','.'], ['.','.','.','.','.','.'], ['.','.','.','.','.','.'], ['.','G','.','.','.','.'], ['.','.','.','.','.','.']], startDir: 2, commands: ['move', 'loop'], optimalMoves: 2 },
@@ -926,8 +931,143 @@ function renderProgram() {
     list.appendChild(block);
   });
 
-  const progList = document.getElementById('program-list');
-  progList.ondragover = (e) => e.preventDefault();
+  // Attach reorder listeners to each program block
+  const progBlocks = list.querySelectorAll('.cmd-block');
+  progBlocks.forEach(block => {
+    block.addEventListener('mousedown', (e) => startReorder(e, block));
+    block.addEventListener('touchstart', (e) => startReorder(e, block), {passive: false});
+  });
+}
+
+// ---- REORDER DRAG ----
+let reorderData = null;
+
+function startReorder(e, block) {
+  if (state.isRunning) return;
+  // Don't reorder if tapping a button (remove, loop adjust)
+  if (e.target.closest('.remove-btn') || e.target.closest('.loop-adj')) return;
+
+  const idx = parseInt(block.dataset.progIndex);
+  if (isNaN(idx)) return;
+
+  // Use a long-press delay to distinguish reorder from tap
+  const touch = e.touches ? e.touches[0] : e;
+  const startX = touch.clientX, startY = touch.clientY;
+  let moved = false;
+  let activated = false;
+  let timer = setTimeout(() => {
+    activated = true;
+    beginReorder(e, block, idx);
+  }, 250);
+
+  function onMoveCheck(ev) {
+    const t = ev.touches ? ev.touches[0] : ev;
+    const dx = t.clientX - startX, dy = t.clientY - startY;
+    if (Math.abs(dx) + Math.abs(dy) > 10) {
+      moved = true;
+      if (!activated) {
+        clearTimeout(timer);
+        activated = true;
+        beginReorder(e, block, idx);
+      }
+      onReorderMove(ev);
+    }
+  }
+  function onUpCheck(ev) {
+    clearTimeout(timer);
+    document.removeEventListener('mousemove', onMoveCheck);
+    document.removeEventListener('mouseup', onUpCheck);
+    document.removeEventListener('touchmove', onMoveCheck);
+    document.removeEventListener('touchend', onUpCheck);
+    if (activated) onReorderEnd(ev);
+  }
+  document.addEventListener('mousemove', onMoveCheck);
+  document.addEventListener('mouseup', onUpCheck);
+  document.addEventListener('touchmove', onMoveCheck, {passive: false});
+  document.addEventListener('touchend', onUpCheck);
+}
+
+function beginReorder(e, block, idx) {
+  e.preventDefault();
+  const touch = e.touches ? e.touches[0] : e;
+  block.classList.add('dragging');
+
+  // Create ghost
+  const ghost = document.createElement('div');
+  ghost.className = block.className.replace('dragging', '');
+  ghost.style.position = 'fixed';
+  ghost.style.zIndex = '9999';
+  ghost.style.opacity = '0.85';
+  ghost.style.pointerEvents = 'none';
+  ghost.style.transform = 'scale(1.05)';
+  ghost.style.width = block.offsetWidth + 'px';
+  ghost.textContent = block.textContent.replace('✕', '').trim();
+  document.body.appendChild(ghost);
+
+  reorderData = { fromIndex: idx, ghost, block };
+  positionGhost(touch.clientX, touch.clientY);
+}
+
+function onReorderMove(e) {
+  if (!reorderData) return;
+  e.preventDefault();
+  const touch = e.touches ? e.touches[0] : e;
+  reorderData.ghost.style.left = (touch.clientX - 40) + 'px';
+  reorderData.ghost.style.top = (touch.clientY - 20) + 'px';
+
+  // Show drop indicator
+  const list = document.getElementById('program-list');
+  list.querySelectorAll('.drop-indicator').forEach(d => d.remove());
+
+  const blocks = Array.from(list.querySelectorAll('.cmd-block'));
+  let insertBefore = null;
+  for (const b of blocks) {
+    const rect = b.getBoundingClientRect();
+    if (touch.clientY < rect.top + rect.height / 2) {
+      insertBefore = b;
+      break;
+    }
+  }
+  const indicator = document.createElement('div');
+  indicator.className = 'drop-indicator';
+  if (insertBefore) {
+    list.insertBefore(indicator, insertBefore);
+  } else {
+    list.appendChild(indicator);
+  }
+}
+
+function onReorderEnd(e) {
+  if (!reorderData) return;
+  const touch = e.changedTouches ? e.changedTouches[0] : e;
+
+  // Find target index
+  const list = document.getElementById('program-list');
+  const blocks = Array.from(list.querySelectorAll('.cmd-block'));
+  let targetIndex = state.program.length;
+  for (const b of blocks) {
+    const rect = b.getBoundingClientRect();
+    if (touch.clientY < rect.top + rect.height / 2) {
+      targetIndex = parseInt(b.dataset.progIndex);
+      break;
+    }
+  }
+
+  const fromIndex = reorderData.fromIndex;
+  reorderData.ghost.remove();
+  reorderData.block.classList.remove('dragging');
+  list.querySelectorAll('.drop-indicator').forEach(d => d.remove());
+
+  // Perform the move
+  if (fromIndex !== targetIndex && fromIndex !== targetIndex - 1) {
+    const item = state.program.splice(fromIndex, 1)[0];
+    const adjTarget = targetIndex > fromIndex ? targetIndex - 1 : targetIndex;
+    state.program.splice(adjTarget, 0, item);
+    sfxPlace();
+  }
+
+  reorderData = null;
+  renderProgram();
 }
 
 // ---- FLATTEN PROGRAM (expand loops) ----
@@ -1029,12 +1169,12 @@ async function runProgram() {
         break;
       }
     } else if (cmd.type === 'turn-left') {
-      dir = (dir + 3) % 4;
+      dir = (dir + 1) % 4;
       state.playerDir = dir;
       rotatePlayer(dir);
       sfxTurn();
     } else if (cmd.type === 'turn-right') {
-      dir = (dir + 1) % 4;
+      dir = (dir + 3) % 4;
       state.playerDir = dir;
       rotatePlayer(dir);
       sfxTurn();

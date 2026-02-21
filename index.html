@@ -128,12 +128,80 @@ html, body {
 .grid-cell.goal { background: #ffeaa7; }
 .grid-cell.visited { background: #dfe6e9; }
 
-/* Player character */
+/* Player character - 3D top-down robot */
 .player {
-  font-size: 36px; transition: all 0.3s ease;
-  position: absolute; z-index: 10;
+  width: 44px; height: 44px; position: absolute; z-index: 10;
+  transition: transform 0.3s ease;
 }
 .player.moving { animation: hop 0.3s ease; }
+.robot-body {
+  width: 100%; height: 100%; position: relative;
+  border-radius: 50%;
+  background: radial-gradient(circle at 40% 35%, #74b9ff, #0984e3 60%, #0652DD 100%);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.35), inset 0 2px 4px rgba(255,255,255,0.3);
+}
+/* Head dome (3D shine) */
+.robot-body::before {
+  content: '';
+  position: absolute; top: 8%; left: 15%; width: 40%; height: 35%;
+  background: radial-gradient(ellipse, rgba(255,255,255,0.6) 0%, transparent 70%);
+  border-radius: 50%;
+}
+/* Visor / eyes - indicates front direction (top = forward) */
+.robot-visor {
+  position: absolute; top: 6px; left: 50%; transform: translateX(-50%);
+  width: 22px; height: 10px;
+  background: linear-gradient(180deg, #ff6b6b, #ee5a24);
+  border-radius: 10px 10px 4px 4px;
+  box-shadow: 0 0 6px rgba(255,107,107,0.6), inset 0 1px 2px rgba(255,255,255,0.3);
+}
+/* Left eye */
+.robot-eye-l, .robot-eye-r {
+  position: absolute; top: 8px; width: 6px; height: 6px;
+  background: radial-gradient(circle, #fff 40%, #ffeaa7 100%);
+  border-radius: 50%;
+  box-shadow: 0 0 4px rgba(255,255,255,0.8);
+}
+.robot-eye-l { left: 12px; }
+.robot-eye-r { right: 12px; }
+/* Antenna */
+.robot-antenna {
+  position: absolute; top: -6px; left: 50%; transform: translateX(-50%);
+  width: 4px; height: 8px;
+  background: linear-gradient(180deg, #fdcb6e, #f39c12);
+  border-radius: 2px;
+}
+.robot-antenna::after {
+  content: '';
+  position: absolute; top: -4px; left: 50%; transform: translateX(-50%);
+  width: 8px; height: 8px;
+  background: radial-gradient(circle, #fdcb6e, #f39c12);
+  border-radius: 50%;
+  box-shadow: 0 0 6px rgba(253,203,110,0.7);
+  animation: antennaPulse 1.5s ease-in-out infinite;
+}
+/* Arm stubs on sides */
+.robot-arm-l, .robot-arm-r {
+  position: absolute; top: 50%; width: 6px; height: 12px;
+  background: linear-gradient(180deg, #74b9ff, #0984e3);
+  border-radius: 3px;
+  transform: translateY(-50%);
+  box-shadow: 0 2px 3px rgba(0,0,0,0.2);
+}
+.robot-arm-l { left: -4px; }
+.robot-arm-r { right: -4px; }
+/* Direction arrow on body (subtle) */
+.robot-arrow {
+  position: absolute; bottom: 6px; left: 50%; transform: translateX(-50%);
+  width: 0; height: 0;
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  border-bottom: 7px solid rgba(255,255,255,0.25);
+}
+@keyframes antennaPulse {
+  0%, 100% { box-shadow: 0 0 4px rgba(253,203,110,0.5); }
+  50% { box-shadow: 0 0 10px rgba(253,203,110,1); }
+}
 
 /* Coding Panel */
 .code-panel {
@@ -324,13 +392,13 @@ html, body {
   .code-panel { width: 100%; border-left: none; border-top: 3px solid #dfe6e9; flex: 1; }
   .grid-panel { flex: 0 0 auto; min-height: 280px; }
   .grid-cell { width: 48px; height: 48px; font-size: 26px; }
-  .player { font-size: 28px; }
+  .player { width: 36px; height: 36px; }
   .command-palette { min-height: 50px; }
   .program-area { min-height: 60px; }
 }
 @media (max-width: 600px) {
   .grid-cell { width: 40px; height: 40px; font-size: 22px; }
-  .player { font-size: 24px; }
+  .player { width: 30px; height: 30px; }
   #title-screen h1 { font-size: 42px; }
   #title-screen .robot-big { font-size: 80px; }
   .play-btn { padding: 16px 40px; font-size: 24px; }
@@ -686,11 +754,20 @@ function renderGrid() {
   state.playerPos = {r: startR, c: startC};
   state.playerDir = level.startDir;
 
-  // Add player element
+  // Add player element — 3D top-down robot
   const player = document.createElement('div');
   player.className = 'player';
   player.id = 'player';
-  player.textContent = '🤖';
+  player.innerHTML = `
+    <div class="robot-body">
+      <div class="robot-antenna"></div>
+      <div class="robot-visor"></div>
+      <div class="robot-eye-l"></div>
+      <div class="robot-eye-r"></div>
+      <div class="robot-arm-l"></div>
+      <div class="robot-arm-r"></div>
+      <div class="robot-arrow"></div>
+    </div>`;
   player.style.transform = `rotate(${DIR_ROTATE[state.playerDir]}deg)`;
   const startCell = container.querySelector(`[data-r="${startR}"][data-c="${startC}"]`);
   if (startCell) startCell.appendChild(player);

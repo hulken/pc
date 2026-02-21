@@ -437,7 +437,7 @@ const TRANSLATIONS = {
     intros: [
       { title: "Meet Robo! 🤖", text: "Robo wants to reach the star! Help Robo by giving commands.", concept: "Drag the 'Move' block into your program, then press Run!" },
       { title: "More Steps!", text: "Robo needs to walk further this time.", concept: "Use TWO 'Move' blocks to go two steps!" },
-      { title: "Turning! 🔄", text: "Sometimes Robo needs to turn! Robo is facing down.", concept: "NEW: Use 'Turn Right' to change direction!" },
+      { title: "Turning! 🔄", text: "Sometimes Robo needs to turn! Robo is facing down.", concept: "NEW: Use 'Turn Left' to change direction!" },
       { title: "Left Turn!", text: "Now Robo can also turn left!", concept: "NEW: 'Turn Left' turns Robo the other way!" },
       { title: "Walls! 🧱", text: "Oh no, there are walls! Robo can't walk through them.", concept: "Go AROUND the wall to reach the star!" },
       { title: "Loops! 🔁", text: "Robo has to walk a LOT of steps. That's tiring to program!", concept: "NEW: Use a LOOP to repeat commands! Put 'Move' inside the loop and set the number." },
@@ -480,7 +480,7 @@ const TRANSLATIONS = {
     intros: [
       { title: "Möt Robo! 🤖", text: "Robo vill nå stjärnan! Hjälp Robo genom att ge kommandon.", concept: "Dra 'Gå'-blocket till ditt program och tryck Kör!" },
       { title: "Fler steg!", text: "Robo behöver gå längre den här gången.", concept: "Använd TVÅ 'Gå'-block för att gå två steg!" },
-      { title: "Svängar! 🔄", text: "Ibland måste Robo svänga! Robo tittar nedåt.", concept: "NYTT: Använd 'Sväng höger' för att byta riktning!" },
+      { title: "Svängar! 🔄", text: "Ibland måste Robo svänga! Robo tittar nedåt.", concept: "NYTT: Använd 'Sväng vänster' för att byta riktning!" },
       { title: "Vänstersväng!", text: "Nu kan Robo också svänga vänster!", concept: "NYTT: 'Sväng vänster' svänger Robo åt andra hållet!" },
       { title: "Väggar! 🧱", text: "Ojdå, det finns väggar! Robo kan inte gå genom dem.", concept: "Gå RUNT väggen för att nå stjärnan!" },
       { title: "Slingor! 🔁", text: "Robo behöver gå MÅNGA steg. Det är jobbigt att programmera!", concept: "NYTT: Använd en SLINGA för att upprepa kommandon! Lägg 'Gå' inuti slingan och ställ in antalet." },
@@ -554,7 +554,7 @@ function sfxPlace() { playTone(500, 0.06, 'sine', 0.08); }
 const LEVELS = [
   { grid: [['.','.','.','.'],['.','.','.','.'], ['.','S','.','.'], ['.','G','.','.']], startDir: 2, commands: ['move'], optimalMoves: 1 },
   { grid: [['.','.','.','.','.'], ['.','S','.','.','.'], ['.','.','.','.','.'], ['.','G','.','.','.'], ['.','.','.','.','.']], startDir: 2, commands: ['move'], optimalMoves: 2 },
-  { grid: [['.','.','.','.','.'], ['.','S','.','.','.'], ['.','.','.','.','.'], ['.','.','.','G','.'], ['.','.','.','.','.']], startDir: 2, commands: ['move', 'turn-right'], optimalMoves: 4 },
+  { grid: [['.','.','.','.','.'], ['.','S','.','.','.'], ['.','.','.','.','.'], ['.','.','.','G','.'], ['.','.','.','.','.']], startDir: 2, commands: ['move', 'turn-left'], optimalMoves: 4 },
   { grid: [['.','.','.','.','.'], ['.','.','.','S','.'], ['.','.','.','.','.'], ['.','G','.','.','.'], ['.','.','.','.','.']], startDir: 2, commands: ['move', 'turn-left', 'turn-right'], optimalMoves: 4 },
   { grid: [['.','.','.','.','.'], ['.','S','.','.','.'], ['.','#','.','.','.'], ['.','.','.','.','.'], ['.','G','.','.','.']], startDir: 2, commands: ['move', 'turn-left', 'turn-right'], optimalMoves: 6 },
   { grid: [['.','S','.','.','.','.'], ['.','.','.','.','.','.'], ['.','.','.','.','.','.'], ['.','.','.','.','.','.'], ['.','G','.','.','.','.'], ['.','.','.','.','.','.']], startDir: 2, commands: ['move', 'loop'], optimalMoves: 2 },
@@ -831,7 +831,16 @@ function addCommand(type) {
     state.program.push({type: 'loop-start', count: 2});
     state.program.push({type: 'loop-end'});
   } else {
-    state.program.push({type: type});
+    // Insert inside the last loop if one exists: find the last loop-end
+    // and insert before it so the command goes inside the loop body.
+    let insertIdx = state.program.length;
+    for (let i = state.program.length - 1; i >= 0; i--) {
+      if (state.program[i].type === 'loop-end') {
+        insertIdx = i;
+        break;
+      }
+    }
+    state.program.splice(insertIdx, 0, {type: type});
   }
   renderProgram();
 }

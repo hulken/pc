@@ -6,6 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>CodePals - Learn to Code!</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <style>
 /* ===== RESET & BASE ===== */
 * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -128,80 +129,12 @@ html, body {
 .grid-cell.goal { background: #ffeaa7; }
 .grid-cell.visited { background: #dfe6e9; }
 
-/* Player character - 3D top-down robot */
+/* Player character - Three.js 3D robot */
 .player {
-  width: 44px; height: 44px; position: absolute; z-index: 10;
-  transition: transform 0.3s ease;
+  width: 56px; height: 56px; position: absolute; z-index: 10;
+  top: 50%; left: 50%; margin-top: -28px; margin-left: -28px;
 }
-.player.moving { animation: hop 0.3s ease; }
-.robot-body {
-  width: 100%; height: 100%; position: relative;
-  border-radius: 50%;
-  background: radial-gradient(circle at 40% 35%, #74b9ff, #0984e3 60%, #0652DD 100%);
-  box-shadow: 0 4px 8px rgba(0,0,0,0.35), inset 0 2px 4px rgba(255,255,255,0.3);
-}
-/* Head dome (3D shine) */
-.robot-body::before {
-  content: '';
-  position: absolute; top: 8%; left: 15%; width: 40%; height: 35%;
-  background: radial-gradient(ellipse, rgba(255,255,255,0.6) 0%, transparent 70%);
-  border-radius: 50%;
-}
-/* Visor / eyes - indicates front direction (top = forward) */
-.robot-visor {
-  position: absolute; top: 6px; left: 50%; transform: translateX(-50%);
-  width: 22px; height: 10px;
-  background: linear-gradient(180deg, #ff6b6b, #ee5a24);
-  border-radius: 10px 10px 4px 4px;
-  box-shadow: 0 0 6px rgba(255,107,107,0.6), inset 0 1px 2px rgba(255,255,255,0.3);
-}
-/* Left eye */
-.robot-eye-l, .robot-eye-r {
-  position: absolute; top: 8px; width: 6px; height: 6px;
-  background: radial-gradient(circle, #fff 40%, #ffeaa7 100%);
-  border-radius: 50%;
-  box-shadow: 0 0 4px rgba(255,255,255,0.8);
-}
-.robot-eye-l { left: 12px; }
-.robot-eye-r { right: 12px; }
-/* Antenna */
-.robot-antenna {
-  position: absolute; top: -6px; left: 50%; transform: translateX(-50%);
-  width: 4px; height: 8px;
-  background: linear-gradient(180deg, #fdcb6e, #f39c12);
-  border-radius: 2px;
-}
-.robot-antenna::after {
-  content: '';
-  position: absolute; top: -4px; left: 50%; transform: translateX(-50%);
-  width: 8px; height: 8px;
-  background: radial-gradient(circle, #fdcb6e, #f39c12);
-  border-radius: 50%;
-  box-shadow: 0 0 6px rgba(253,203,110,0.7);
-  animation: antennaPulse 1.5s ease-in-out infinite;
-}
-/* Arm stubs on sides */
-.robot-arm-l, .robot-arm-r {
-  position: absolute; top: 50%; width: 6px; height: 12px;
-  background: linear-gradient(180deg, #74b9ff, #0984e3);
-  border-radius: 3px;
-  transform: translateY(-50%);
-  box-shadow: 0 2px 3px rgba(0,0,0,0.2);
-}
-.robot-arm-l { left: -4px; }
-.robot-arm-r { right: -4px; }
-/* Direction arrow on body (subtle) */
-.robot-arrow {
-  position: absolute; bottom: 6px; left: 50%; transform: translateX(-50%);
-  width: 0; height: 0;
-  border-left: 5px solid transparent;
-  border-right: 5px solid transparent;
-  border-bottom: 7px solid rgba(255,255,255,0.25);
-}
-@keyframes antennaPulse {
-  0%, 100% { box-shadow: 0 0 4px rgba(253,203,110,0.5); }
-  50% { box-shadow: 0 0 10px rgba(253,203,110,1); }
-}
+.player canvas { display: block; }
 
 /* Coding Panel */
 .code-panel {
@@ -366,10 +299,6 @@ html, body {
   0%, 100% { transform: translateY(0) rotate(-5deg); }
   50% { transform: translateY(-20px) rotate(5deg); }
 }
-@keyframes hop {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-8px); }
-}
 @keyframes popIn {
   0% { transform: scale(0.5); opacity: 0; }
   100% { transform: scale(1); opacity: 1; }
@@ -392,13 +321,13 @@ html, body {
   .code-panel { width: 100%; border-left: none; border-top: 3px solid #dfe6e9; flex: 1; }
   .grid-panel { flex: 0 0 auto; min-height: 280px; }
   .grid-cell { width: 48px; height: 48px; font-size: 26px; }
-  .player { width: 36px; height: 36px; }
+  .player { width: 44px; height: 44px; margin-top: -22px; margin-left: -22px; }
   .command-palette { min-height: 50px; }
   .program-area { min-height: 60px; }
 }
 @media (max-width: 600px) {
   .grid-cell { width: 40px; height: 40px; font-size: 22px; }
-  .player { width: 30px; height: 30px; }
+  .player { width: 36px; height: 36px; margin-top: -18px; margin-left: -18px; }
   #title-screen h1 { font-size: 42px; }
   #title-screen .robot-big { font-size: 80px; }
   .play-btn { padding: 16px 40px; font-size: 24px; }
@@ -754,23 +683,183 @@ function renderGrid() {
   state.playerPos = {r: startR, c: startC};
   state.playerDir = level.startDir;
 
-  // Add player element — 3D top-down robot
+  // Add player element with Three.js canvas
   const player = document.createElement('div');
   player.className = 'player';
   player.id = 'player';
-  player.innerHTML = `
-    <div class="robot-body">
-      <div class="robot-antenna"></div>
-      <div class="robot-visor"></div>
-      <div class="robot-eye-l"></div>
-      <div class="robot-eye-r"></div>
-      <div class="robot-arm-l"></div>
-      <div class="robot-arm-r"></div>
-      <div class="robot-arrow"></div>
-    </div>`;
-  player.style.transform = `rotate(${DIR_ROTATE[state.playerDir]}deg)`;
   const startCell = container.querySelector(`[data-r="${startR}"][data-c="${startC}"]`);
   if (startCell) startCell.appendChild(player);
+  initRobot3D(player, state.playerDir);
+}
+
+// ---- THREE.JS 3D ROBOT ----
+let robot3D = null; // { scene, camera, renderer, robot, animId, targetRotY }
+
+function initRobot3D(container, dir) {
+  if (robot3D) {
+    if (robot3D.animId) cancelAnimationFrame(robot3D.animId);
+    if (robot3D.renderer) robot3D.renderer.dispose();
+  }
+
+  const size = container.offsetWidth || 56;
+  const scene = new THREE.Scene();
+
+  // Camera: top-down with slight tilt for depth
+  const camera = new THREE.PerspectiveCamera(40, 1, 0.1, 100);
+  camera.position.set(0, 5.5, 2.5);
+  camera.lookAt(0, 0, 0);
+
+  const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+  renderer.setSize(size, size);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.setClearColor(0x000000, 0);
+  container.innerHTML = '';
+  container.appendChild(renderer.domElement);
+
+  // Lighting
+  const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+  scene.add(ambientLight);
+
+  const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+  dirLight.position.set(2, 5, 3);
+  dirLight.castShadow = true;
+  scene.add(dirLight);
+
+  const rimLight = new THREE.DirectionalLight(0x88ccff, 0.3);
+  rimLight.position.set(-2, 3, -2);
+  scene.add(rimLight);
+
+  // Build robot
+  const robot = new THREE.Group();
+
+  // Body - main cylinder
+  const bodyGeo = new THREE.CylinderGeometry(0.7, 0.8, 1.0, 16);
+  const bodyMat = new THREE.MeshPhongMaterial({ color: 0x0984e3, shininess: 80 });
+  const body = new THREE.Mesh(bodyGeo, bodyMat);
+  body.position.y = 0.5;
+  robot.add(body);
+
+  // Chest plate
+  const chestGeo = new THREE.CylinderGeometry(0.72, 0.72, 0.3, 16);
+  const chestMat = new THREE.MeshPhongMaterial({ color: 0x74b9ff, shininess: 100 });
+  const chest = new THREE.Mesh(chestGeo, chestMat);
+  chest.position.y = 0.7;
+  robot.add(chest);
+
+  // Head - sphere
+  const headGeo = new THREE.SphereGeometry(0.55, 16, 12);
+  const headMat = new THREE.MeshPhongMaterial({ color: 0x0984e3, shininess: 100 });
+  const head = new THREE.Mesh(headGeo, headMat);
+  head.position.y = 1.4;
+  robot.add(head);
+
+  // Visor - front face indicator
+  const visorGeo = new THREE.BoxGeometry(0.6, 0.2, 0.15);
+  const visorMat = new THREE.MeshPhongMaterial({ color: 0xff6b6b, emissive: 0xff3333, emissiveIntensity: 0.4, shininess: 120 });
+  const visor = new THREE.Mesh(visorGeo, visorMat);
+  visor.position.set(0, 1.45, 0.48);
+  robot.add(visor);
+
+  // Eyes
+  const eyeGeo = new THREE.SphereGeometry(0.08, 8, 8);
+  const eyeMat = new THREE.MeshPhongMaterial({ color: 0xffffff, emissive: 0xffeaa7, emissiveIntensity: 0.6 });
+  const eyeL = new THREE.Mesh(eyeGeo, eyeMat);
+  eyeL.position.set(-0.2, 1.5, 0.5);
+  robot.add(eyeL);
+  const eyeR = new THREE.Mesh(eyeGeo, eyeMat);
+  eyeR.position.set(0.2, 1.5, 0.5);
+  robot.add(eyeR);
+
+  // Antenna
+  const antennaGeo = new THREE.CylinderGeometry(0.04, 0.04, 0.5, 6);
+  const antennaMat = new THREE.MeshPhongMaterial({ color: 0xf39c12, shininess: 60 });
+  const antenna = new THREE.Mesh(antennaGeo, antennaMat);
+  antenna.position.y = 2.15;
+  robot.add(antenna);
+
+  // Antenna ball
+  const ballGeo = new THREE.SphereGeometry(0.12, 8, 8);
+  const ballMat = new THREE.MeshPhongMaterial({ color: 0xfdcb6e, emissive: 0xf39c12, emissiveIntensity: 0.5, shininess: 100 });
+  const ball = new THREE.Mesh(ballGeo, ballMat);
+  ball.position.y = 2.45;
+  robot.add(ball);
+
+  // Arms
+  const armGeo = new THREE.CylinderGeometry(0.15, 0.12, 0.6, 8);
+  const armMat = new THREE.MeshPhongMaterial({ color: 0x0652DD, shininess: 60 });
+  const armL = new THREE.Mesh(armGeo, armMat);
+  armL.position.set(-0.95, 0.6, 0);
+  armL.rotation.z = 0.3;
+  robot.add(armL);
+  const armR = new THREE.Mesh(armGeo, armMat);
+  armR.position.set(0.95, 0.6, 0);
+  armR.rotation.z = -0.3;
+  robot.add(armR);
+
+  // Hands
+  const handGeo = new THREE.SphereGeometry(0.14, 8, 8);
+  const handMat = new THREE.MeshPhongMaterial({ color: 0x74b9ff, shininess: 80 });
+  const handL = new THREE.Mesh(handGeo, handMat);
+  handL.position.set(-1.05, 0.3, 0);
+  robot.add(handL);
+  const handR = new THREE.Mesh(handGeo, handMat);
+  handR.position.set(1.05, 0.3, 0);
+  robot.add(handR);
+
+  // Feet / base
+  const footGeo = new THREE.CylinderGeometry(0.2, 0.25, 0.2, 8);
+  const footMat = new THREE.MeshPhongMaterial({ color: 0x2d3436, shininess: 40 });
+  const footL = new THREE.Mesh(footGeo, footMat);
+  footL.position.set(-0.35, 0.1, 0);
+  robot.add(footL);
+  const footR = new THREE.Mesh(footGeo, footMat);
+  footR.position.set(0.35, 0.1, 0);
+  robot.add(footR);
+
+  // Shadow disk
+  const shadowGeo = new THREE.CircleGeometry(0.9, 16);
+  const shadowMat = new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.15 });
+  const shadow = new THREE.Mesh(shadowGeo, shadowMat);
+  shadow.rotation.x = -Math.PI / 2;
+  shadow.position.y = 0.01;
+  robot.add(shadow);
+
+  // Set initial rotation: dir 0=up(facing -Z), 1=right, 2=down(+Z), 3=left
+  // Three.js: robot faces +Z by default, so dir=2 is 0 rotation
+  const dirAngles = [Math.PI, Math.PI / 2, 0, -Math.PI / 2];
+  robot.rotation.y = dirAngles[dir];
+
+  scene.add(robot);
+
+  robot3D = {
+    scene, camera, renderer, robot, ball, animId: null,
+    targetRotY: dirAngles[dir],
+    currentRotY: dirAngles[dir],
+    bobTime: 0,
+  };
+
+  function animate() {
+    robot3D.animId = requestAnimationFrame(animate);
+    robot3D.bobTime += 0.04;
+
+    // Smooth rotation
+    const diff = robot3D.targetRotY - robot3D.currentRotY;
+    // Normalize angle difference
+    let delta = ((diff + Math.PI) % (2 * Math.PI)) - Math.PI;
+    if (delta < -Math.PI) delta += 2 * Math.PI;
+    robot3D.currentRotY += delta * 0.15;
+    robot.rotation.y = robot3D.currentRotY;
+
+    // Idle bob
+    robot.position.y = Math.sin(robot3D.bobTime) * 0.05;
+
+    // Antenna glow pulse
+    const pulse = (Math.sin(robot3D.bobTime * 2) + 1) / 2;
+    ball.material.emissiveIntensity = 0.3 + pulse * 0.7;
+
+    renderer.render(scene, camera);
+  }
+  animate();
 }
 
 function movePlayerToCell(r, c) {
@@ -779,16 +868,14 @@ function movePlayerToCell(r, c) {
   const player = document.getElementById('player');
   if (cell && player) {
     cell.appendChild(player);
-    player.classList.add('moving');
-    setTimeout(() => player.classList.remove('moving'), 300);
   }
 }
 
 function rotatePlayer(dir) {
-  const player = document.getElementById('player');
-  if (player) {
-    player.style.transform = `rotate(${DIR_ROTATE[dir]}deg)`;
-  }
+  if (!robot3D) return;
+  // dir: 0=up(-Z), 1=right(+X), 2=down(+Z), 3=left(-X)
+  const dirAngles = [Math.PI, Math.PI / 2, 0, -Math.PI / 2];
+  robot3D.targetRotY = dirAngles[dir];
 }
 
 function markCellVisited(r, c) {
